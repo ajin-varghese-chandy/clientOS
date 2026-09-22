@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+* {
+  scrollbar-width: none;
+  font-family: 'Noto Sans', sans-serif;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}

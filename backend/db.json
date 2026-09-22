@@ -1,0 +1,389 @@
+{
+  "clients": [
+    {
+      "id": "client_001",
+      "name": "Acme Corp",
+      "email": "hello@acme.com",
+      "phone": "+91 98765 43210",
+      "company": "Acme Corporation",
+      "industry": "Technology",
+      "status": "active",
+      "totalRevenue": 84000,
+      "createdAt": "2026-06-15"
+    },
+    {
+      "id": "client_002",
+      "name": "Nova Technologies",
+      "email": "contact@novatech.in",
+      "phone": "+91 87654 32109",
+      "company": "Nova Technologies Pvt Ltd",
+      "industry": "Healthcare",
+      "status": "active",
+      "totalRevenue": 45000,
+      "createdAt": "2026-07-20"
+    },
+    {
+      "id": "client_003",
+      "name": "Pixel Studios",
+      "email": "info@pixelstudios.com",
+      "phone": "+91 76543 21098",
+      "company": "Pixel Studios",
+      "industry": "Design",
+      "status": "active",
+      "totalRevenue": 80000,
+      "createdAt": "2026-08-10"
+    },
+    {
+      "id": "client_004",
+      "name": "Zeno Solutions",
+      "email": "hi@zenosol.com",
+      "phone": "+91 65432 10987",
+      "company": "Zeno Solutions LLC",
+      "industry": "Finance",
+      "status": "inactive",
+      "totalRevenue": 74160,
+      "createdAt": "2026-05-01"
+    },
+    {
+      "id": "client_005",
+      "name": "GreenLeaf Organics",
+      "email": "support@greenleaf.in",
+      "phone": "+91 54321 09876",
+      "company": "GreenLeaf Organics",
+      "industry": "Retail",
+      "status": "active",
+      "totalRevenue": 35000,
+      "createdAt": "2026-09-01"
+    }
+  ],
+  "opportunities": [
+    {
+      "id": "opp_001",
+      "clientId": "client_001",
+      "title": "Restaurant Website",
+      "value": 45000,
+      "probability": 70,
+      "stage": "proposal",
+      "expectedClose": "2026-10-15",
+      "createdAt": "2026-09-20"
+    },
+    {
+      "id": "opp_002",
+      "clientId": "client_002",
+      "title": "Healthcare App",
+      "value": 120000,
+      "probability": 40,
+      "stage": "contacted",
+      "expectedClose": "2026-11-30",
+      "createdAt": "2026-09-18"
+    },
+    {
+      "id": "opp_003",
+      "clientId": "client_003",
+      "title": "E-commerce Redesign",
+      "value": 80000,
+      "probability": 90,
+      "stage": "won",
+      "expectedClose": "2026-09-25",
+      "createdAt": "2026-08-25"
+    },
+    {
+      "id": "opp_004",
+      "clientId": "client_004",
+      "title": "Finance Dashboard",
+      "value": 60000,
+      "probability": 20,
+      "stage": "lead",
+      "expectedClose": "2026-12-01",
+      "createdAt": "2026-09-22"
+    },
+    {
+      "id": "opp_005",
+      "clientId": "client_005",
+      "title": "Online Store Setup",
+      "value": 35000,
+      "probability": 55,
+      "stage": "won",
+      "expectedClose": "2026-10-20",
+      "createdAt": "2026-09-15"
+    },
+    {
+      "id": "opp_006",
+      "clientId": "client_001",
+      "title": "Mobile App Phase 2",
+      "value": 95000,
+      "probability": 60,
+      "stage": "proposal",
+      "expectedClose": "2026-11-10",
+      "createdAt": "2026-09-10"
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj_001",
+      "clientId": "client_003",
+      "opportunityId": "opp_003",
+      "title": "E-commerce Redesign",
+      "status": "completed",
+      "deadline": "2026-10-30",
+      "progress": 45,
+      "milestones": [
+        {
+          "name": "Design Mockups",
+          "done": true
+        },
+        {
+          "name": "Frontend Development",
+          "done": true
+        },
+        {
+          "name": "Backend Integration",
+          "done": false
+        },
+        {
+          "name": "Testing & QA",
+          "done": false
+        },
+        {
+          "name": "Deployment",
+          "done": false
+        }
+      ],
+      "createdAt": "2026-09-25"
+    },
+    {
+      "id": "proj_002",
+      "clientId": "client_001",
+      "opportunityId": "opp_001",
+      "title": "Restaurant Website",
+      "status": "in_progress",
+      "deadline": "2026-11-15",
+      "progress": 20,
+      "milestones": [
+        {
+          "name": "Requirements Gathering",
+          "done": true
+        },
+        {
+          "name": "UI/UX Design",
+          "done": false
+        },
+        {
+          "name": "Development",
+          "done": false
+        },
+        {
+          "name": "Launch",
+          "done": false
+        }
+      ],
+      "createdAt": "2026-09-20"
+    },
+    {
+      "id": "guP9ge8x41g",
+      "clientId": "client_003",
+      "opportunityId": "opp_003",
+      "title": "E-commerce Redesign",
+      "status": "in_progress",
+      "deadline": "2026-09-26",
+      "progress": 0,
+      "milestones": [
+        {
+          "name": "Planning",
+          "done": false
+        },
+        {
+          "name": "Development",
+          "done": false
+        },
+        {
+          "name": "Review",
+          "done": false
+        },
+        {
+          "name": "Launch",
+          "done": false
+        }
+      ],
+      "createdAt": "2026-09-22"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task_001",
+      "projectId": "proj_001",
+      "title": "Finalize product catalog layout",
+      "status": "completed",
+      "assignedTo": "Me",
+      "dueDate": "2026-10-01",
+      "createdAt": "2026-09-25"
+    },
+    {
+      "id": "task_002",
+      "projectId": "proj_001",
+      "title": "Set up payment gateway",
+      "status": "in_progress",
+      "assignedTo": "Me",
+      "dueDate": "2026-10-15",
+      "createdAt": "2026-09-26"
+    },
+    {
+      "id": "task_003",
+      "projectId": "proj_001",
+      "title": "Write API endpoints",
+      "status": "in_progress",
+      "assignedTo": "Me",
+      "dueDate": "2026-10-20",
+      "createdAt": "2026-09-28"
+    },
+    {
+      "id": "task_004",
+      "projectId": "proj_002",
+      "title": "Collect restaurant menu and photos",
+      "status": "in_progress",
+      "assignedTo": "Me",
+      "dueDate": "2026-10-05",
+      "createdAt": "2026-09-22"
+    },
+    {
+      "id": "task_005",
+      "projectId": "proj_002",
+      "title": "Create wireframes",
+      "status": "todo",
+      "assignedTo": "Me",
+      "dueDate": "2026-10-10",
+      "createdAt": "2026-09-22"
+    }
+  ],
+  "invoices": [
+    {
+      "id": "inv_001",
+      "clientId": "client_003",
+      "projectId": "proj_001",
+      "invoiceNumber": "INV-101",
+      "status": "paid",
+      "issueDate": "2026-09-25",
+      "dueDate": "2026-10-10",
+      "paidDate": "2026-09-22",
+      "lineItems": [
+        {
+          "description": "UI/UX Design",
+          "amount": 25000
+        },
+        {
+          "description": "Frontend Development",
+          "amount": 35000
+        }
+      ],
+      "subtotal": 60000,
+      "tax": 10800,
+      "total": 70800
+    },
+    {
+      "id": "inv_002",
+      "clientId": "client_001",
+      "projectId": "proj_002",
+      "invoiceNumber": "INV-102",
+      "status": "unpaid",
+      "issueDate": "2026-09-28",
+      "dueDate": "2026-10-28",
+      "paidDate": null,
+      "lineItems": [
+        {
+          "description": "Requirements & Planning",
+          "amount": 8000
+        },
+        {
+          "description": "UI/UX Design",
+          "amount": 15000
+        }
+      ],
+      "subtotal": 23000,
+      "tax": 4140,
+      "total": 27140
+    },
+    {
+      "id": "inv_003",
+      "clientId": "client_004",
+      "projectId": null,
+      "invoiceNumber": "INV-103",
+      "status": "paid",
+      "issueDate": "2026-08-15",
+      "dueDate": "2026-09-15",
+      "paidDate": "2026-09-22",
+      "lineItems": [
+        {
+          "description": "Consulting - Financial Dashboard",
+          "amount": 12000
+        }
+      ],
+      "subtotal": 12000,
+      "tax": 2160,
+      "total": 14160
+    },
+    {
+      "id": "inv_004",
+      "clientId": "client_001",
+      "projectId": null,
+      "invoiceNumber": "INV-104",
+      "status": "paid",
+      "issueDate": "2026-09-15",
+      "dueDate": "2026-09-30",
+      "paidDate": "2026-09-22",
+      "lineItems": [
+        {
+          "description": "Website Maintenance - Sep",
+          "amount": 5000
+        }
+      ],
+      "subtotal": 5000,
+      "tax": 900,
+      "total": 5900
+    }
+  ],
+  "activities": [
+    {
+      "id": "act_001",
+      "type": "proposal_sent",
+      "message": "Proposal sent to Acme Corp for Restaurant Website",
+      "timestamp": "2026-09-22T10:32:00",
+      "relatedId": "opp_001"
+    },
+    {
+      "id": "act_002",
+      "type": "invoice_paid",
+      "message": "Invoice INV-104 marked paid by Acme Corp",
+      "timestamp": "2026-09-22T09:15:00",
+      "relatedId": "inv_004"
+    },
+    {
+      "id": "act_003",
+      "type": "new_lead",
+      "message": "New lead: Nova Technologies",
+      "timestamp": "2026-09-21T16:42:00",
+      "relatedId": "client_002"
+    },
+    {
+      "id": "act_004",
+      "type": "milestone_done",
+      "message": "Project milestone completed: Frontend Development for E-commerce Redesign",
+      "timestamp": "2026-09-21T14:20:00",
+      "relatedId": "proj_001"
+    },
+    {
+      "id": "act_005",
+      "type": "task_completed",
+      "message": "Task completed: Finalize product catalog layout",
+      "timestamp": "2026-09-20T11:00:00",
+      "relatedId": "task_001"
+    },
+    {
+      "id": "act_006",
+      "type": "project_started",
+      "message": "Project started: Restaurant Website for Acme Corp",
+      "timestamp": "2026-09-20T09:00:00",
+      "relatedId": "proj_002"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}
