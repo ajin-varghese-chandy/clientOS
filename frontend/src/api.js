@@ -32,4 +32,19 @@ export async function remove(resource, id) {
   return res.data
 }
 
+export async function logActivity(type, message, relatedId, entityType) {
+  try {
+    return await create('activities', {
+      type,
+      message,
+      relatedId: relatedId ?? null,
+      entityType,
+      timestamp: new Date().toISOString(),
+    })
+  } catch (err) {
+    console.error('Failed to log activity', err)
+    return null
+  }
+}
+
 export default api
