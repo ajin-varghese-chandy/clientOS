@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { fetchById, fetchAll, create, update } from '../api'
+import { fetchById, fetchAll, create, update, logActivity } from '../api'
 import { ArrowLeft, Download } from 'lucide-react'
 import jsPDF from 'jspdf'
 
@@ -35,14 +35,28 @@ function ProjectDetail() {
   }, [id])
 
   async function toggleMilestone(index) {
-    const updated = { ...project }
-    updated.milestones[index].done = !updated.milestones[index].done
-    const doneCount = updated.milestones.filter((m) => m.done).length
-    updated.progress = Math.round((doneCount / updated.milestones.length) * 100)
+    const wasDone = project.milestones[index].done
+    const milestones = project.milestones.map((m, i) =>
+      i === index ? { ...m, done: !m.done } : m
+    )
+    const doneCount = milestones.filter((m) => m.done).length
+    const updated = {
+      ...project,
+      milestones,
+      progress: Math.round((doneCount / milestones.length) * 100),
+    }
 
     setProject(updated)
     try {
       await update('projects', id, updated)
+      if (!wasDone) {
+        logActivity(
+          'milestone_done',
+          `Project milestone completed: ${milestones[index].name} for ${project.title}`,
+          id,
+          'project'
+        )
+      }
     } catch (err) {
       console.error('Failed to update milestone', err)
     }
@@ -78,6 +92,9 @@ function ProjectDetail() {
     setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)))
     try {
       await update('tasks', task.id, updated)
+      if (updated.status === 'completed' && task.status !== 'completed') {
+        logActivity('task_completed', `Task completed: ${task.title}`, task.id, 'task')
+      }
     } catch (err) {
       setTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)))
       console.error('Failed to update task', err)
@@ -95,26 +112,18 @@ function ProjectDetail() {
     }
   }
 
-  function createInvoice() {
-    const newInvoice = {
-      id: 'inv_' + Date.now(),
+  async function createInvoice() {
+    const opp = project.opportunityId
+      ? await fetchById('opportunities', project.opportunityId).catch(() => null)
+      : null
+
+    const query = new URLSearchParams({
       clientId: project.clientId,
       projectId: project.id,
-      invoiceNumber: 'INV-' + Math.floor(1000 + Math.random() * 9000),
-      status: 'unpaid',
-      issueDate: new Date().toISOString().split('T')[0],
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      paidDate: null,
-      lineItems: [{ description: project.title, amount: 0 }],
-      subtotal: 0,
-      tax: 0,
-      total: 0,
-    }
-    create('invoices', newInvoice).then(() => {
-      navigate('/invoices')
-    }).catch((err) => {
-      console.error('Failed to create invoice', err)
+      desc: project.title,
+      amount: opp ? String(opp.value) : '',
     })
+    navigate(`/invoices/new?${query}`)
   }
 
   function downloadStatusReport() {
@@ -174,7 +183,6 @@ function ProjectDetail() {
         Back to Projects
       </Link>
 
-      {/* Project Header */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -227,7 +235,6 @@ function ProjectDetail() {
           ></div>
         </div>
 
-        {/* Status buttons */}
         <div className="flex gap-2">
           {project.status !== 'in_progress' && (
             <button
@@ -265,7 +272,6 @@ function ProjectDetail() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Milestones */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="font-bold mb-4">Milestones</h3>
           <div className="space-y-2">
@@ -288,7 +294,6 @@ function ProjectDetail() {
           </div>
         </div>
 
-        {/* Tasks */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="font-bold mb-4">Tasks</h3>
           <form onSubmit={addTask} className="flex gap-2 mb-4">
