@@ -1,22 +1,22 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { fetchAll, update, create } from '../api'
-import { ChevronLeft, ChevronRight, MousePointerClick, FolderOpen, X } from 'lucide-react'
+import { fetchAll, update, create, logActivity } from '../api'
+import { MousePointerClick, FolderOpen, X } from 'lucide-react'
 
 const STAGES = [
-  { key: 'lead', label: 'Lead', color: 'bg-gray-100 border-gray-300', hint: 'New leads go here' },
-  { key: 'contacted', label: 'Contacted', color: 'bg-blue-50 border-blue-300', hint: 'Awaiting response' },
-  { key: 'proposal', label: 'Proposal Sent', color: 'bg-yellow-50 border-yellow-300', hint: 'Proposal out' },
-  { key: 'negotiation', label: 'Negotiation', color: 'bg-orange-50 border-orange-300', hint: 'In discussion' },
-  { key: 'won', label: 'Won', color: 'bg-green-50 border-green-300', hint: 'Ready to start' },
+  { key: 'lead', label: 'Lead', color: 'bg-gray-100 border-gray-300', ring: 'ring-gray-500', hint: 'New leads go here' },
+  { key: 'contacted', label: 'Contacted', color: 'bg-blue-50 border-blue-300', ring: 'ring-blue-500', hint: 'Awaiting response' },
+  { key: 'proposal', label: 'Proposal Sent', color: 'bg-yellow-50 border-yellow-300', ring: 'ring-yellow-500', hint: 'Proposal out' },
+  { key: 'negotiation', label: 'Negotiation', color: 'bg-orange-50 border-orange-300', ring: 'ring-orange-500', hint: 'In discussion' },
+  { key: 'won', label: 'Won', color: 'bg-green-50 border-green-300', ring: 'ring-green-500', hint: 'Ready to start' },
 ]
 
 function formatCurrency(amount) {
   return '₹' + amount.toLocaleString('en-IN')
 }
 
-function getStageIndex(stageKey) {
-  return STAGES.findIndex((s) => s.key === stageKey)
+function newId(prefix) {
+  return prefix + Date.now()
 }
 
 function Pipeline() {
@@ -24,9 +24,10 @@ function Pipeline() {
   const [clients, setClients] = useState([])
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState([])
   const [wonModal, setWonModal] = useState({ show: false, opp: null })
   const [projectForm, setProjectForm] = useState({ title: '', deadline: '' })
+  const [draggingId, setDraggingId] = useState(null)
+  const [dragOverStage, setDragOverStage] = useState(null)
 
   useEffect(() => {
     async function loadData() {
@@ -48,62 +49,52 @@ function Pipeline() {
     loadData()
   }, [])
 
-  function toggleSelect(id) {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
-    )
-  }
+  async function moveOppToStage(opp, newStage) {
+    if (!newStage || opp.stage === newStage) return
 
-  function clearSelection() {
-    setSelected([])
-  }
+    const updated = { ...opp, stage: newStage }
+    setOpportunities((prev) => prev.map((o) => (o.id === opp.id ? updated : o)))
 
-  async function moveSelected(direction) {
-    const selectedOpps = opportunities.filter((o) => selected.includes(o.id))
-    const updates = []
-    let movingToWon = false
-    let wonOpp = null
-
-    for (const opp of selectedOpps) {
-      const currentIndex = getStageIndex(opp.stage)
-      const newIndex = direction === 'right' ? currentIndex + 1 : currentIndex - 1
-
-      if (newIndex < 0 || newIndex >= STAGES.length) continue
-
-      const newStage = STAGES[newIndex].key
-      const updated = { ...opp, stage: newStage }
-      updates.push({ opp, updated })
-
-      if (newStage === 'won') {
-        movingToWon = true
-        wonOpp = opp
-      }
-    }
-
-    if (updates.length === 0) return
-
-    setOpportunities((prev) =>
-      prev.map((o) => {
-        const u = updates.find((upd) => upd.opp.id === o.id)
-        return u ? u.updated : o
-      })
-    )
-    setSelected([])
-
-    for (const { opp, updated } of updates) {
-      try {
-        await update('opportunities', opp.id, updated)
-      } catch (err) {
-        setOpportunities((prev) =>
-          prev.map((o) => (o.id === opp.id ? opp : o))
+    try {
+      await update('opportunities', opp.id, updated)
+      if (newStage === 'proposal' && opp.stage !== 'proposal') {
+        logActivity(
+          'proposal_sent',
+          `Proposal sent to ${getClientName(opp.clientId)} for ${opp.title}`,
+          opp.id,
+          'opportunity'
         )
-        console.error('Failed to update opportunity', err)
       }
+    } catch (err) {
+      setOpportunities((prev) => prev.map((o) => (o.id === opp.id ? opp : o)))
+      console.error('Failed to update opportunity', err)
+      return
     }
 
-    if (movingToWon && wonOpp) {
-      openWonModal(wonOpp)
+    if (newStage === 'won') {
+      openWonModal(opp)
     }
+  }
+
+  function handleDragOver(e, stageKey) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (dragOverStage !== stageKey) setDragOverStage(stageKey)
+  }
+
+  function handleDragLeave(e) {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragOverStage(null)
+    }
+  }
+
+  function handleDrop(e, stageKey) {
+    e.preventDefault()
+    setDraggingId(null)
+    setDragOverStage(null)
+    const id = e.dataTransfer.getData('text/plain')
+    const opp = opportunities.find((o) => o.id === id)
+    if (opp) moveOppToStage(opp, stageKey)
   }
 
   function getClientName(clientId) {
@@ -115,18 +106,8 @@ function Pipeline() {
     return projects.some((p) => p.opportunityId === oppId)
   }
 
-  function canMoveLeft() {
-    return selected.some((id) => {
-      const opp = opportunities.find((o) => o.id === id)
-      return opp && getStageIndex(opp.stage) > 0
-    })
-  }
-
-  function canMoveRight() {
-    return selected.some((id) => {
-      const opp = opportunities.find((o) => o.id === id)
-      return opp && getStageIndex(opp.stage) < STAGES.length - 1
-    })
+  function getProjectForOpp(oppId) {
+    return projects.find((p) => p.opportunityId === oppId)
   }
 
   function openWonModal(opp) {
@@ -143,7 +124,7 @@ function Pipeline() {
     if (!projectForm.deadline) return
 
     const newProject = {
-      id: 'proj_' + Date.now(),
+      id: newId('proj_'),
       clientId: wonModal.opp.clientId,
       opportunityId: wonModal.opp.id,
       title: projectForm.title,
@@ -160,7 +141,14 @@ function Pipeline() {
     }
 
     try {
-      await create('projects', newProject)
+      const saved = await create('projects', newProject)
+      setProjects((prev) => [...prev, saved])
+      logActivity(
+        'project_started',
+        `Project started: ${saved.title} for ${getClientName(saved.clientId)}`,
+        saved.id,
+        'project'
+      )
       closeWonModal()
     } catch (err) {
       console.error('Failed to create project', err)
@@ -172,37 +160,29 @@ function Pipeline() {
   }
 
   return (
-    <div className="pb-20">
-      <h2 className="text-xl lg:text-2xl font-bold mb-4 text-white uppercase">Pipeline</h2>
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl lg:text-2xl font-bold text-white uppercase">Pipeline</h2>
+        <span className="text-xs text-white/60">Drag cards between stages</span>
+      </div>
 
-      {/* Mobile: horizontal scroll, Desktop: flex */}
       <div className="flex gap-3 overflow-x-auto pb-4 -mx-3 px-3 lg:mx-0 lg:px-0">
         {STAGES.map((stage) => {
           const stageOpps = opportunities.filter((o) => o.stage === stage.key)
           const totalValue = stageOpps.reduce((sum, o) => sum + o.value, 0)
-          const allSelected = stageOpps.length > 0 && stageOpps.every((o) => selected.includes(o.id))
 
           return (
             <div
               key={stage.key}
-              className={`min-w-[240px] lg:min-w-0 flex-1 rounded-lg border-2 ${stage.color} p-3`}
+              onDragOver={(e) => handleDragOver(e, stage.key)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, stage.key)}
+              className={`min-w-[240px] lg:min-w-0 flex-1 rounded-lg border-2 ${stage.color} p-3 transition-all duration-150 ${
+                dragOverStage === stage.key ? `ring-2 ${stage.ring} scale-[1.01]` : ''
+              }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={() => {
-                      if (allSelected) {
-                        setSelected((prev) => prev.filter((id) => !stageOpps.some((o) => o.id === id)))
-                      } else {
-                        setSelected((prev) => [...new Set([...prev, ...stageOpps.map((o) => o.id)])])
-                      }
-                    }}
-                    className="w-4 h-4"
-                  />
-                  <h3 className="font-bold text-xs lg:text-sm">{stage.label}</h3>
-                </div>
+                <h3 className="font-bold text-xs lg:text-sm">{stage.label}</h3>
                 <span className="text-[10px] lg:text-xs bg-white rounded-full px-1.5 lg:px-2 py-0.5 font-medium">
                   {stageOpps.length} · {formatCurrency(totalValue)}
                 </span>
@@ -212,51 +192,57 @@ function Pipeline() {
                 {stageOpps.map((opp) => (
                   <div
                     key={opp.id}
-                    onClick={() => toggleSelect(opp.id)}
-                    className={`bg-white rounded-lg p-2 lg:p-2.5 border cursor-pointer transition-all duration-150 ${
-                      selected.includes(opp.id)
-                        ? 'border-blue-500 bg-blue-50 shadow-md scale-[1.02]'
-                        : 'border-gray-100 hover:border-gray-300 hover:shadow-sm'
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', opp.id)
+                      e.dataTransfer.effectAllowed = 'move'
+                      setDraggingId(opp.id)
+                    }}
+                    onDragEnd={() => {
+                      setDraggingId(null)
+                      setDragOverStage(null)
+                    }}
+                    className={`bg-white rounded-lg p-2 lg:p-2.5 border border-gray-100 hover:border-gray-300 hover:shadow-sm cursor-grab active:cursor-grabbing transition-all duration-150 ${
+                      draggingId === opp.id ? 'opacity-40' : ''
                     }`}
                   >
-                    <div className="flex items-start gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selected.includes(opp.id)}
-                        onChange={() => toggleSelect(opp.id)}
-                        className="w-3.5 h-3.5 mt-0.5 shrink-0"
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-xs lg:text-sm truncate">{opp.title}</div>
+                      <Link
+                        to={`/clients/${opp.clientId}`}
                         onClick={(e) => e.stopPropagation()}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-xs lg:text-sm truncate">{opp.title}</div>
-                        <div className="text-[10px] lg:text-xs text-gray-500 truncate">
-                          {getClientName(opp.clientId)}
-                        </div>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-[10px] lg:text-xs font-bold text-green-600">
-                            {formatCurrency(opp.value)}
-                          </span>
-                          <span className="text-[10px] text-gray-400">
-                            {opp.probability}%
-                          </span>
-                        </div>
-                        {opp.stage === 'won' && (
-                          hasProject(opp.id) ? (
-                            <div className="mt-2 flex items-center justify-center gap-1 text-[10px] bg-gray-50 text-gray-400 px-2 py-1 rounded w-full cursor-not-allowed">
-                              <FolderOpen size={10} />
-                              Project Exists
-                            </div>
-                          ) : (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); openWonModal(opp) }}
-                              className="mt-2 flex items-center justify-center gap-1 text-[10px] bg-green-50 text-green-600 px-2 py-1 rounded hover:bg-green-100 transition-colors w-full"
-                            >
-                              <FolderOpen size={10} />
-                              Create Project
-                            </button>
-                          )
-                        )}
+                        className="text-[10px] lg:text-xs text-gray-500 truncate block hover:text-blue-600 hover:underline"
+                      >
+                        {getClientName(opp.clientId)}
+                      </Link>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-[10px] lg:text-xs font-bold text-green-600">
+                          {formatCurrency(opp.value)}
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          {opp.probability}%
+                        </span>
                       </div>
+                      {opp.stage === 'won' && (
+                        hasProject(opp.id) ? (
+                          <Link
+                            to={`/projects/${getProjectForOpp(opp.id).id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-2 flex items-center justify-center gap-1 text-[10px] bg-green-50 text-green-600 px-2 py-1 rounded hover:bg-green-100 transition-colors w-full"
+                          >
+                            <FolderOpen size={10} />
+                            View Project
+                          </Link>
+                        ) : (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openWonModal(opp) }}
+                            className="mt-2 flex items-center justify-center gap-1 text-[10px] bg-green-50 text-green-600 px-2 py-1 rounded hover:bg-green-100 transition-colors w-full"
+                          >
+                            <FolderOpen size={10} />
+                            Create Project
+                          </button>
+                        )
+                      )}
                     </div>
                   </div>
                 ))}
@@ -272,44 +258,6 @@ function Pipeline() {
         })}
       </div>
 
-      {/* Selection Bar */}
-      <div className={`fixed bottom-0 left-0 right-0 transition-all duration-300 z-20 ${
-        selected.length > 0 ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
-      }`}>
-        <div className="bg-gray-900 text-white px-4 lg:px-6 py-3 flex items-center justify-center gap-2 lg:gap-4 shadow-2xl">
-          <span className="text-xs lg:text-sm font-medium">
-            {selected.length} selected
-          </span>
-          <div className="h-4 w-px bg-gray-600 hidden sm:block"></div>
-          <button
-            onClick={() => moveSelected('left')}
-            disabled={!canMoveLeft()}
-            className="flex items-center gap-1 px-2 lg:px-3 py-1.5 bg-gray-700 rounded text-xs lg:text-sm hover:bg-blue-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft size={14} />
-            <span className="hidden sm:inline">Move Left</span>
-            <span className="sm:hidden">Left</span>
-          </button>
-          <button
-            onClick={() => moveSelected('right')}
-            disabled={!canMoveRight()}
-            className="flex items-center gap-1 px-2 lg:px-3 py-1.5 bg-gray-700 rounded text-xs lg:text-sm hover:bg-blue-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            <span className="hidden sm:inline">Move Right</span>
-            <span className="sm:hidden">Right</span>
-            <ChevronRight size={14} />
-          </button>
-          <div className="h-4 w-px bg-gray-600 hidden sm:block"></div>
-          <button
-            onClick={clearSelection}
-            className="text-gray-400 hover:text-white text-xs lg:text-sm transition-colors"
-          >
-            Clear
-          </button>
-        </div>
-      </div>
-
-      {/* Won Modal */}
       {wonModal.show && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
