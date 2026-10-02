@@ -3,7 +3,7 @@ import { LayoutDashboard, GitPullRequestArrow, Users, FolderOpen, DollarSign, Pa
 
 function Sidebar({ open, onToggle, onClose }) {
   const navItems = [
-    { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
     { to: '/pipeline', icon: GitPullRequestArrow, label: 'Pipeline' },
     { to: '/clients', icon: Users, label: 'Clients' },
     { to: '/projects', icon: FolderOpen, label: 'Projects' },
