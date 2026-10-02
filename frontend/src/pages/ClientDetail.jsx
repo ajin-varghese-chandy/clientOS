@@ -12,6 +12,7 @@ function ClientDetail() {
   const [client, setClient] = useState(null)
   const [opportunities, setOpportunities] = useState([])
   const [invoices, setInvoices] = useState([])
+  const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -20,12 +21,14 @@ function ClientDetail() {
         const clientData = await fetchById('clients', id)
         setClient(clientData)
 
-        const [allOpps, allInvoices] = await Promise.all([
+        const [allOpps, allInvoices, allProjects] = await Promise.all([
           fetchAll('opportunities'),
           fetchAll('invoices'),
+          fetchAll('projects'),
         ])
         setOpportunities(allOpps.filter((o) => o.clientId === id))
         setInvoices(allInvoices.filter((i) => i.clientId === id))
+        setProjects(allProjects.filter((p) => p.clientId === id))
       } catch (err) {
         console.error('Failed to load client', err)
       } finally {
@@ -43,6 +46,10 @@ function ClientDetail() {
     return <div className="text-center py-12 text-gray-500">Client not found</div>
   }
 
+  const totalRevenue = invoices
+    .filter((i) => i.status === 'paid')
+    .reduce((sum, i) => sum + i.total, 0)
+
   return (
     <div>
       <Link to="/clients" className="text-white text-sm font-bold hover:underline mb-4 inline-flex items-center gap-1">
@@ -50,7 +57,6 @@ function ClientDetail() {
         Back to Clients
       </Link>
 
-      {/* Client Info */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex items-start justify-between">
           <div>
@@ -78,14 +84,16 @@ function ClientDetail() {
           </div>
           <div>
             <div className="text-xs text-gray-400">Total Revenue</div>
-            <div className="text-sm font-bold text-green-600">{formatCurrency(client.totalRevenue)}</div>
+            <div className="text-sm font-bold text-green-600">{formatCurrency(totalRevenue)}</div>
           </div>
         </div>
       </div>
 
-      {/* Opportunities */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h3 className="text-lg font-bold mb-4">Opportunities</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold">Opportunities</h3>
+          <Link to="/pipeline" className="text-sm text-blue-600 hover:underline">View pipeline →</Link>
+        </div>
         {opportunities.length === 0 ? (
           <p className="text-gray-400 text-sm">No opportunities yet</p>
         ) : (
@@ -106,15 +114,58 @@ function ClientDetail() {
         )}
       </div>
 
-      {/* Invoices */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold">Projects</h3>
+          <Link to="/projects" className="text-sm text-blue-600 hover:underline">View all →</Link>
+        </div>
+        {projects.length === 0 ? (
+          <p className="text-gray-400 text-sm">No projects yet</p>
+        ) : (
+          <div className="space-y-3">
+            {projects.map((project) => (
+              <Link
+                key={project.id}
+                to={`/projects/${project.id}`}
+                className="flex items-center justify-between py-2 border-b last:border-b-0 hover:bg-gray-50 -mx-1 px-1 rounded"
+              >
+                <div>
+                  <div className="font-medium text-sm text-blue-600">{project.title}</div>
+                  <div className="text-xs text-gray-400">Due: {project.deadline}</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-500">{project.progress}%</span>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    project.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                    project.status === 'completed' ? 'bg-green-100 text-green-700' :
+                    project.status === 'on_hold' ? 'bg-yellow-100 text-yellow-700' :
+                    project.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    {project.status.replace('_', ' ')}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-bold mb-4">Invoices</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold">Invoices</h3>
+          <Link to="/invoices" className="text-sm text-blue-600 hover:underline">View all →</Link>
+        </div>
         {invoices.length === 0 ? (
           <p className="text-gray-400 text-sm">No invoices yet</p>
         ) : (
           <div className="space-y-3">
             {invoices.map((inv) => (
-              <div key={inv.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
+              <Link
+                key={inv.id}
+                to="/invoices"
+                className="flex items-center justify-between py-2 border-b last:border-b-0 hover:bg-gray-50 -mx-1 px-1 rounded"
+              >
                 <div>
                   <div className="font-medium text-sm">{inv.invoiceNumber}</div>
                   <div className="text-xs text-gray-400">Due: {inv.dueDate}</div>
@@ -129,7 +180,7 @@ function ClientDetail() {
                     {inv.status}
                   </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
